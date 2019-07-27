@@ -1,151 +1,24 @@
+# Credit Card Fraud Detection (Classification Modeling)
 
-```{r}
-rm(list=ls());
+### Dashboard link: 
+https://xudong-z.shinyapps.io/credit-card-fraud-analysis/
 
-library(randomForest)
-library(caret)
-library(ROCR)
-library(DMwR)
-library(data.table)
-library(zoo)
-
-df <- fread("creditcard.csv")
-
-```
+#### 1. EDA on each variables
+<img width="1227" alt="1-EDA" src="https://user-images.githubusercontent.com/20660492/61994425-a758f800-b0ac-11e9-8c1d-20329717cb29.png">
 
 
-```{r}
-#library(foreach)
-# 非并行计算方式，类似于sapply函数的功能
-# x <- foreach(x=1:1000,.combine='rbind') %do% func(x)
- 
-# 启用parallel作为foreach并行计算的后端
-#library(doParallel)
-#cl <- makeCluster(4)
-#registerDoParallel(cl)
-# 并行计算方式
-# x <- foreach(x=1:1000,.combine='rbind') %dopar% func(x)
-```
+### 2. Classification models evaluation (based on Area under ROC and Precision-Recall curve)
+candidate models: Logit, Random Forest, KNN, Neural Network, 
+<img width="1167" alt="2-evaluation" src="https://user-images.githubusercontent.com/20660492/61994426-a758f800-b0ac-11e9-9fcb-fef98d0ba12d.png">
 
+### 3. Detection Strategy Analysis 
+ - for transactions with small amount, should take radical detection, the Recall score in PR curve matters more
+ - for transactions with large amount, should take conservation detection, the Precision score in PR curve matters more
+<img width="913" alt="3-stategy analysis" src="https://user-images.githubusercontent.com/20660492/61994427-a758f800-b0ac-11e9-8ebe-44eac708ea25.png">
 
+### 4. Best model - Random Forest in use
+ - allow users to customize the select RF model by setting the oversampling level, detection accuration threshold
+<img width="1159" alt="4-Random Forest application" src="https://user-images.githubusercontent.com/20660492/61994428-a7f18e80-b0ac-11e9-9f9b-4b0663b0f587.png">
 
-
-# Data pre-processing
-```{r}
-## 'normalize' the data
-transform_columns <- c("V","Amount")
-transformed_column<- df[ ,grepl(paste(transform_columns, collapse = "|"),names(df)),with = FALSE]
-transformed_column2 <-df[,2:30]
-#normalize
-transformed_column_processed <- predict(preProcess(transformed_column, 
-                                                   method = c("BoxCox","scale")),
-                                        transformed_column)
-
-df_new <- data.table(cbind(transformed_column_processed,Class = df$Class))
-class(df_new$Class)
-df_new[,Class:=as.factor(Class)] #:= data.table method
-class(df_new$Class)
-
-df_new$Class = ifelse(df_new$Class == "1", 'Yes','No')
-
-#write.csv(df_new, "df_new.csv")
-```
-
-Functions to calculate 'area under the pr curve'
-```{r}
-auprc <- function(pr_curve) {
- x <- as.numeric(unlist(pr_curve@x.values))
- y <- as.numeric(unlist(pr_curve@y.values))
- y[is.nan(y)] <- 1
- id <- order(x)
- result <- sum(diff(x[id])*rollmean(y[id],2))
- return(result)
-}
-
-
-```
-
-```{r}
-results_nn2 = NULL
-```
-
-# Training and Test dataset  (training, training_SMOTE, test)
-# Training and Test dataset  (training, training_SMOTE, test)
-```{r}
-# df_new <- fread("df_new.csv")
-
-train_partition = 0.7
-SMOTE_perc_over = 600
-set.seed(1003)
-training_index <- createDataPartition(df_new$Class, p=train_partition, list=F)
-#set.seed(1003)
-#training_index2 <- sample(nrow(df_new), 0.7*nrow(df_new))
-
-training <- df_new[training_index,]
-test<- df_new[-training_index,]
-# table(training$Class)
-# sampling SMOTE: tuner
-training$Class = as.factor(training$Class)
-
-training_SMOTE<-SMOTE(Class~., training, perc.over=SMOTE_perc_over, perc.under=100) 
-# 400, 600, 1000. AUC-PR都不一样 越大越好
-table(training_SMOTE$Class)
-ctrl <- trainControl(method = "cv", number = 10, 
-                     classProbs = TRUE, summaryFunction = twoClassSummary)
-```
-
-# NEURAL NETWORK  (NON-LINEAR) 适合多个Y的预测
-```{r}
-library(neuralnet)
-nn_predictors = paste(paste("V",1:28, sep = "", collapse = "+"),
-                      "Amount", sep = "+")
-nn_formula = as.formula(paste("Class", nn_predictors , sep = "~"))
-nn_training_SMOTE = training_SMOTE #只换了这里的SMOTE
-nn_training_SMOTE$Class <- ifelse(training_SMOTE$Class == "Yes",1,0)
-start = Sys.time()
-nn <- neuralnet(nn_formula , data = nn_training_SMOTE, hidden=10, threshold=0.01, stepmax = 1e+6, rep = 10) 
-end = Sys.time()
-time_diff = as.numeric(difftime(end, start, units = 'secs'))
-
-#plot(nn)
-test_nn = model.matrix(~.,test)
-nn_pred <- compute(nn, test_nn[,2:30])$net.result
-detach(package:neuralnet,unload = T)
-nn_prediction <- prediction(predictions = nn_pred,
-                               labels = test$Class)
-
-#library(ROCR)  
-#data(ROCR.simple)
-#pred <- prediction(ROCR.simple$predictions,ROCR.simple$labels)
-nn_pr <- performance(nn_prediction,"prec","rec")
-#plot(logit_pr, print.thres=TRUE)
-nn_roc <- performance(nn_prediction,"tpr","fpr")
-#plot(logit_roc)
-nn_auc <- performance(nn_prediction,"auc") # 如何寻找最优cutoff
-
-nn_eva= c(auprc(nn_pr), nn_auc@y.values[[1]], 
-          time_diff, train_partition, SMOTE_perc_over)
-```
-
-
-# Comparison Comparison Comparison
-# Comparison Comparison Comparison
-# Comparison Comparison Comparison
-```{r}
-nn22 <- rbind(nn22, nn_eva)
-```
-
-```{r}
-#all_results = data.frame(rownames(results),round(results,4), row.names = NULL)
-#colnames(all_results) = c("Model",'AU_PRC', 'AU_ROC','Time','Data_Patition','SMOTE_OverPercent')
-#library(stringr)
-#all_results$Model = str_to_upper(str_sub(all_results$Model,start = 1, end = -5))
-
-#all_results %>%
-#    arrange(SMOTE_OverPercent) %>%
-#    group_by(Model) %>%
-#    summarise(round(mean(AU_ROC),4))
-
-
-#    write.csv(file = "all_results.csv")
-```
+### 5. Actional Suggestions
+<img width="900" alt="5-suggestion" src="https://user-images.githubusercontent.com/20660492/61994429-a7f18e80-b0ac-11e9-9d81-b0cd80ef7b5a.png">
