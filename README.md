@@ -8,7 +8,7 @@ https://xudong-z.shinyapps.io/credit-card-fraud-analysis/
 
 
 ### 2. Classification models evaluation (based on Area under ROC and Precision-Recall curve)
-candidate models: Logit, Random Forest, KNN, Neural Network, 
+candidate models: Logit, Random Forest, Boosting Trees, Neural Network, SVM, KNN 
 <img width="1167" alt="2-evaluation" src="https://user-images.githubusercontent.com/20660492/61994426-a758f800-b0ac-11e9-9fcb-fef98d0ba12d.png">
 
 ### 3. Detection Strategy Analysis 
@@ -17,7 +17,7 @@ candidate models: Logit, Random Forest, KNN, Neural Network,
 <img width="913" alt="3-stategy analysis" src="https://user-images.githubusercontent.com/20660492/61994427-a758f800-b0ac-11e9-8ebe-44eac708ea25.png">
 
 ### 4. Best model - Random Forest in use
- - allow users to customize the select RF model by setting the oversampling level, detection accuration threshold
+ - allow users to customize the select RF model by setting the data partitioning level, SMOTE sampling level, transaction amount threshold, desired precision/recall score
 <img width="1159" alt="4-Random Forest application" src="https://user-images.githubusercontent.com/20660492/61994428-a7f18e80-b0ac-11e9-9f9b-4b0663b0f587.png">
 
 ### 5. Actional Suggestions
