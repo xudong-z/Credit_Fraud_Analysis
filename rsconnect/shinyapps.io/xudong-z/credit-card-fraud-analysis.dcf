@@ -1,0 +1,12 @@
+name: credit-card-fraud-analysis
+title: credit-card-fraud-analysis
+username:
+account: xudong-z
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1043608
+bundleId: 2252299
+url: https://xudong-z.shinyapps.io/credit-card-fraud-analysis/
+when: 1563725983.0804
+asMultiple: FALSE
+asStatic: FALSE

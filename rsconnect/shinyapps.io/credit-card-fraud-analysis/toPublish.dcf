@@ -1,0 +1,12 @@
+name: toPublish
+title: toPublish
+username:
+account: credit-card-fraud-analysis
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1043625
+bundleId: 2252269
+url: https://credit-card-fraud-analysis.shinyapps.io/toPublish/
+when: 1563725131.82276
+asMultiple: FALSE
+asStatic: FALSE
